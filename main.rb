@@ -27,9 +27,9 @@ class Board
   def draw
     puts "    0 1 2  "
     puts "  #########"
-    puts "0 # #{x_axis(0).join(":")} #"
-    puts "1 # #{x_axis(1).join(":")} #"
-    puts "2 # #{x_axis(2).join(":")} #"
+    puts "0 # #{x_axis(0).join("|")} #"
+    puts "1 # #{x_axis(1).join("|")} #"
+    puts "2 # #{x_axis(2).join("|")} #"
     puts "  #########"
     puts
   end
@@ -97,13 +97,46 @@ class ComputerPlayer
   end
 
   def find_position
-#    if board.movements <= 3
-      begin
-        position.x = rand(0..2)
-        position.y = rand(0..2)
-      end while !board.valid_position?(position)
-      position
-#    end
+    if board.movements <= 3
+      return random_position
+    else
+      winner_line = straight_winner_line("O", :x_axis)
+      if winner_line
+        position.x = winner_line
+        position.y = board.send(:x_axis, winner_line).join.index("_")
+        return position
+      else
+        winner_line = straight_winner_line("O", :y_axis)
+        if winner_line
+          position.x = board.send(:y_axis, winner_line).join.index("_")
+          position.y = winner_line
+          return position
+        else
+          winner_line = diagonal_winner_line("0", 1)
+          if winner_line
+            binding.pry
+          else
+            winner_line = diagonal_winner_line("0", 2)
+            if winner_line
+              binding.pry
+            else
+              # check for winner X lines
+              return random_position
+            end
+          end
+        end
+      end
+    end
+    return nil
+  end
+
+  def random_position
+    return position if board.valid_position?(position)
+    begin
+      position.x = rand(0..2)
+      position.y = rand(0..2)
+    end while !board.valid_position?(position)
+    position
   end
 
   def straight_winner_line(player, axis)
@@ -113,16 +146,15 @@ class ComputerPlayer
     nil
   end
 
-  def check_diagonals(player)
-    return true if board.send(:diagonal_1).count(player) == 2
-    return true if board.send(:diagonal_2).count(player) == 2
+  def diagonal_winner_line(player, num)
+    board.send("diagonal_#{num}".to_sym).count(player) == 2
   end
 
   def winner_line?(player, axis, line)
-    board.send(axis, line).count(player) == 2
+    board_line = board.send(axis, line)
+    board_line.count(player) == 2 && board_line.count('_') == 1
   end
 end
-
 
 board = Board.new
 
@@ -140,7 +172,6 @@ begin
     puts "X wins!"
   end
 
-#  binding.pry
   computer_position = ComputerPlayer.new(board).find_position
   board[computer_position] = "O"
 
@@ -148,6 +179,5 @@ begin
     board.draw
     puts "O wins!"
   end
-
 end until board.winner
 
