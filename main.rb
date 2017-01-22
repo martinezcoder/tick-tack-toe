@@ -27,15 +27,15 @@ class Board
   def draw
     puts "    0 1 2  "
     puts "  #########"
-    puts "0 # #{y_axis(0).join(":")} #"
-    puts "1 # #{y_axis(1).join(":")} #"
-    puts "2 # #{y_axis(2).join(":")} #"
+    puts "0 # #{x_axis(0).join(":")} #"
+    puts "1 # #{x_axis(1).join(":")} #"
+    puts "2 # #{x_axis(2).join(":")} #"
     puts "  #########"
     puts
   end
 
   def valid_position?(position)
-    position.x <= MAX && position.y <= MAX && board[position] == "_"
+    self[position] == "_" && position.x <= MAX && position.y <= MAX
   end
 
   private
@@ -48,6 +48,14 @@ class Board
     (0..MAX).to_a.product([y]).collect { |index| board[index] }
   end
 
+  def diagonal_1
+    "#{board[[0,0]]}#{board[[1,1]]}#{board[[2,2]]}"
+  end
+
+  def diagonal_2
+    "#{board[[0,2]]}#{board[[1,1]]}#{board[[2,0]]}"
+  end
+
   def in_diagonal?(position)
     position.x == position.y || position.x == 2 || position.y == 2
   end
@@ -58,15 +66,16 @@ class Board
     return true if x_axis(position.x).join == expected
     return true if y_axis(position.y).join == expected
     if in_diagonal?(position)
-      return true if "#{board[[0,0]]}#{board[[1,1]]}#{board[[2,2]]}" == expected
-      return true if "#{board[[0,2]]}#{board[[1,1]]}#{board[[2,0]]}" == expected
+      return true if diagonal_1 == expected
+      return true if diagonal_2 == expected
     end
     false
   end
 end
 
 class Position
-  attr_reader :x, :y
+  attr_accessor :x, :y
+
   def initialize(coord)
     if coord
       @x = coord[1].to_i
@@ -78,6 +87,42 @@ class Position
     x.nil? || y.nil?
   end
 end
+
+class ComputerPlayer
+  attr_accessor :board, :position
+
+  def initialize(board)
+    @board = board #deep_copy(board)
+    @position = Position.new( {1 => 1, 2 => 1} )
+  end
+
+  def find_position
+#    if board.movements <= 3
+      begin
+        position.x = rand(0..2)
+        position.y = rand(0..2)
+      end while !board.valid_position?(position)
+      position
+#    end
+  end
+
+  def straight_winner_line(player, axis)
+    [0,1,2].each do |line|
+      return line if winner_line?(player, axis, line)
+    end
+    nil
+  end
+
+  def check_diagonals(player)
+    return true if board.send(:diagonal_1).count(player) == 2
+    return true if board.send(:diagonal_2).count(player) == 2
+  end
+
+  def winner_line?(player, axis, line)
+    board.send(axis, line).count(player) == 2
+  end
+end
+
 
 board = Board.new
 
@@ -94,5 +139,15 @@ begin
     board.draw
     puts "X wins!"
   end
+
+#  binding.pry
+  computer_position = ComputerPlayer.new(board).find_position
+  board[computer_position] = "O"
+
+  if board.winner == "O"
+    board.draw
+    puts "O wins!"
+  end
+
 end until board.winner
 
