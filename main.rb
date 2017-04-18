@@ -170,14 +170,14 @@ begin
   if board.winner == "X"
     board.draw
     puts "X wins!"
-  end
+  else
+    computer_position = ComputerPlayer.new(board).find_position
+    board[computer_position] = "O"
 
-  computer_position = ComputerPlayer.new(board).find_position
-  board[computer_position] = "O"
-
-  if board.winner == "O"
-    board.draw
-    puts "O wins!"
+    if board.winner == "O"
+      board.draw
+      puts "O wins!"
+    end
   end
 end until board.winner
 
