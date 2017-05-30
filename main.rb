@@ -38,7 +38,19 @@ class Board
     self[position] == "_" && position.x <= MAX && position.y <= MAX
   end
 
-  private
+  def straight_winner_line(player, axis)
+    [0,1,2].each do |line|
+      return line if winner_line?(player, axis, line)
+    end
+    nil
+  end
+
+  def diagonal_winner_line(player, num)
+    diagonal = self.send("diagonal_#{num}".to_sym)
+    if diagonal.count(player) == 2 && diagonal.count('_') == 1
+      return diagonal.index('_')
+    end
+  end
 
   def x_axis(x)
     [x].product((0..MAX).to_a).collect { |index| board[index] }
@@ -56,6 +68,8 @@ class Board
     "#{board[[2,0]]}#{board[[1,1]]}#{board[[0,2]]}"
   end
 
+  private
+
   def in_diagonal?(position)
     position.x == position.y || position.x == 2 || position.y == 2
   end
@@ -70,6 +84,11 @@ class Board
       return true if diagonal_2 == expected
     end
     false
+  end
+
+  def winner_line?(player, axis, line)
+    board_line = self.send(axis, line)
+    board_line.count(player) == 2 && board_line.count('_') == 1
   end
 end
 
@@ -100,8 +119,8 @@ class ComputerPlayer
     if board.movements < 3
       position = random_position
     else
-      unless position = winner_position('X')
-        unless position = winner_position('O')
+      unless position = winner_position('O')
+        unless position = winner_position('X')
           position = random_position
         end
       end
@@ -112,23 +131,23 @@ class ComputerPlayer
   private
 
   def winner_position(player)
-    winner_numline = straight_winner_line(player, :x_axis)
+    winner_numline = board.straight_winner_line(player, :x_axis)
     if winner_numline
       position.x = winner_numline
-      position.y = board.send(:x_axis, winner_numline).join.index("_")
+      position.y = board.x_axis(winner_numline).join.index("_")
     else
-      winner_numline = straight_winner_line(player, :y_axis)
+      winner_numline = board.straight_winner_line(player, :y_axis)
       if winner_numline
-        position.x = board.send(:y_axis, winner_numline).join.index("_")
+        position.x = board.y_axis(winner_numline).join.index("_")
         position.y = winner_numline
       else
-        winner_numline = diagonal_winner_line(player, 1)
+        winner_numline = board.diagonal_winner_line(player, 1)
         if winner_numline
           position.x = winner_numline
           position.y = winner_numline
           return position
         else
-          winner_numline = diagonal_winner_line(player, 2)
+          winner_numline = board.diagonal_winner_line(player, 2)
           if winner_numline
             position.x = (winner_numline == 0) ? 2 : 0
             position.y = winner_numline
@@ -151,24 +170,6 @@ class ComputerPlayer
     position
   end
 
-  def straight_winner_line(player, axis)
-    [0,1,2].each do |line|
-      return line if winner_line?(player, axis, line)
-    end
-    nil
-  end
-
-  def diagonal_winner_line(player, num)
-    diagonal = board.send("diagonal_#{num}".to_sym)
-    if diagonal.count(player) == 2 && diagonal.count('_') == 1
-      return diagonal.index('_')
-    end
-  end
-
-  def winner_line?(player, axis, line)
-    board_line = board.send(axis, line)
-    board_line.count(player) == 2 && board_line.count('_') == 1
-  end
 end
 
 board = Board.new
